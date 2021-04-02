@@ -1,5 +1,8 @@
+import themidibus.*;
 import processing.sound.*;
 import interfascia.*;
+import java.util.*;
+
 //COLORS//
 color circleColor = color(255,0,0);
 color lineColor = color(255,0,0);
@@ -78,11 +81,19 @@ boolean isPlay = false;
 IFRadioController colorModeSwitch;
 IFRadioButton mathModeRadioButton, musicModeRadioButton;
 
+IFRadioController inputModeSwitch;
+IFRadioButton midiModeRadioButton, mouseModeRadioButton;
+
 //GUI Frame
-int radioRectX;
-int radioRectY;
-int radioRectWidth;
-int radioRectHeight;
+int colorRectX;
+int colorRectY;
+int colorRectWidth;
+int colorRectHeight;
+
+int inputRectX;
+int inputRectY;
+int inputRectWidth;
+int inputRectHeight;
 
 //CURSOR
 float cursorTailX;
@@ -91,6 +102,14 @@ float cursorTailY;
 
 //COLOR MODE
 int colorMode;
+
+//MIDI MODE
+boolean midiMode;
+
+//MIDI PROCESSING
+MidiBus midiBus;
+
+Map<Integer,SinOsc> concurrentNotes;
 
 void setup(){
   size(1200,960);
@@ -192,21 +211,43 @@ void setup(){
   mathModeRadioButton = new IFRadioButton("Math", 12, 40, colorModeSwitch);
   musicModeRadioButton = new IFRadioButton("Music", 12, 60, colorModeSwitch);
   
+  inputModeSwitch = new IFRadioController("Input Mode");
+  inputModeSwitch.addActionListener(this);
+  midiModeRadioButton = new IFRadioButton("MIDI", 12,90,inputModeSwitch);
+  mouseModeRadioButton = new IFRadioButton("Mouse", 12,110,inputModeSwitch);
+  
+  
   //c.add(testText);
   c.add(playButton);
   c.add(colorModeSwitch);
   c.add(mathModeRadioButton);
   c.add(musicModeRadioButton);
+  c.add(inputModeSwitch);
+  c.add(midiModeRadioButton);
+  c.add(mouseModeRadioButton);
   
-  //radio rectangle
-  radioRectX = 10;
-  radioRectY = 40;
-  radioRectWidth = 80;
-  radioRectHeight = 40;
+  //color rectangle
+  colorRectX = 10;
+  colorRectY = 40;
+  colorRectWidth = 80;
+  colorRectHeight = 40;
   
+  inputRectX = 10;
+  inputRectY = 90;
+  inputRectWidth = 80;
+  inputRectHeight = 40;
   
   //COLOR MODE
   colorMode = 0; //Math Mode
+  
+  //PLAY MODES
+  
+  midiMode = false;
+  
+  //MIDI
+  midiBus = new MidiBus(this,0,1);
+  
+  concurrentNotes = new HashMap<Integer,SinOsc>();
 }
 
 void draw(){
@@ -240,21 +281,37 @@ void draw(){
   stroke(lineColor);
   fill(0);
   
-  angle = atan2(mouseY - height/2, mouseX - width/2);
-  if(angle < 0){
-    angle += 2*PI;
+  if(midiMode){
+    
+  }else{
+    angle = atan2(mouseY - height/2, mouseX - width/2);
+    if(angle < 0){
+      angle += 2*PI;
+    }
+    ratio = angle / PI;
+    noFill();
+    arc(originX,originY,2*radius,2*radius,0,angle,CHORD);
+    noFill();
+    
+    stroke(lineColor);
+    drawChords(angle);
+    
+    ratioOsc.freq(tonicFreq*ratio);
+    
+    if(isPlay){
+      tonicOsc.play();
+      ratioOsc.play();
+    }else{
+      tonicOsc.stop();
+      ratioOsc.stop();
+    }
   }
-  ratio = angle / PI;
-  noFill();
-  arc(originX,originY,2*radius,2*radius,0,angle,CHORD);
-  noFill();
-  
-  stroke(lineColor);
-  drawChords(angle);
   
   //Radio Rect
   fill(200);
-  rect(radioRectX,radioRectY,radioRectWidth,radioRectHeight);
+  rect(colorRectX,colorRectY,colorRectWidth,colorRectHeight);
+  //input rect
+  rect(inputRectX,inputRectY,inputRectWidth,inputRectHeight);
   //CURSOR
   stroke(255);                                                  //sqrt(pow(mouseX-originX,2)+pow(mouseY-originY,2))-20
   cursorTailX = cos(atan2(mouseY - height/2, mouseX - width/2))*(radius) + originX;
@@ -262,15 +319,7 @@ void draw(){
   line(cursorTailX,cursorTailY,mouseX,mouseY);
   //line(mouseX, mouseY, cursorTailX,cursorTailY);
 
-  ratioOsc.freq(tonicFreq*ratio);
   
-  if(isPlay){
-    tonicOsc.play();
-    ratioOsc.play();
-  }else{
-    tonicOsc.stop();
-    ratioOsc.stop();
-  }
 }
 
 void actionPerformed(GUIEvent e){
@@ -299,6 +348,14 @@ void actionPerformed(GUIEvent e){
     if(e.getMessage() == "Selected"){
       colorMode = 1;
     }
+  }else if(e.getSource() == midiModeRadioButton){
+    if(e.getMessage() == "Selected"){
+      midiMode = true;
+    }
+  }else if(e.getSource() == mouseModeRadioButton){
+    if(e.getMessage() == "Selected"){
+      midiMode = false;
+    }
   }
 }
 
@@ -312,6 +369,26 @@ void keyPressed(){
       playButton.setLabel("PAUSE");
    }
  }
+}
+
+void noteOn(int channel, int pitch, int velocity, long timestamp, String bus_name){
+  println(channel, pitch, velocity, timestamp);
+  SinOsc s = new SinOsc(this);
+  s.play(midiToFreq(pitch),velToAmp(velocity));
+  concurrentNotes.put(new Integer(pitch),s);
+}
+
+void noteOff(int channel, int pitch, int velocity, long timestamp, String bus_name){
+  println(channel, pitch, velocity, timestamp);
+  concurrentNotes.remove(new Integer(pitch)).stop();
+}
+
+float midiToFreq(int note){
+  return (pow(2, ((note-69)/12.0))) * 440;
+}
+
+float velToAmp(int vel){
+  return vel/127.0;
 }
 
 void drawChords(float angle){
