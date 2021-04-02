@@ -1,11 +1,12 @@
 import processing.sound.*;
+import interfascia.*;
 //COLORS//
 color circleColor = color(255,0,0);
 color lineColor = color(255,0,0);
 color arcColor = color(255,0,0);
 //
 //MAIN CIRCLE DIMENSIONS//
-int radius = 400;
+int radius = 200;
 int diameter = 2*radius;
 
 int originX;
@@ -18,80 +19,41 @@ float angleDenom;
 //RADIUS LINES//
 
 int fractionRadius = 1000;
+//math mode
+RadiusLine[] halfs;
+RadiusLine[] thirds;
+RadiusLine[] quarters;
+RadiusLine[] fifths;
+RadiusLine[] sixths;
+RadiusLine[] sevenths;
+RadiusLine[] eighths;
 
-float[] x3;
-float[] y3;
+color halfsColor = color(255,255,255);
+color thirdsColor = color(0,255,0);
+color quartersColor = color(0,0,255);
+color fifthsColor = color(255,0,0);
+color sixthsColor = color(0,255,255);
+color seventhsColor = color(255,0,255);
+color eighthsColor = color(0,50,128);
 
-float[] x4;
-float[] y4;
+//music mode
+RadiusLine[] tonics;
+RadiusLine[] supertonics;
+RadiusLine[] mediants;
+RadiusLine[] subdominants;
+RadiusLine[] dominants;
+RadiusLine[] submediants;
+RadiusLine[] subtonics;
 
-float[] x5;
-float[] y5;
-
-float[] x6;
-float[] y6;
-
-float[] x7;
-float[] y7;
-
-float[] x8;
-float[] y8;
-
-float[] x9;
-float[] y9;
-
-float[] x10;
-float[] y10;
-
-boolean circleOver = false;
-//
-//BUTTON//
-int buttonX;
-int buttonY;
-int buttonWidth = 128;
-int buttonHeight = 128;
-color buttonColor;
-color buttonHighlight;
-boolean buttonOver = false;
-boolean textMode = false;
-//
-//BUTTON TEXT//
-PFont f;
-String buttonText = "";
-String buttonState = "";
-
-int textX;
-int textY;
-int textWidth = 128;
-int textHeight = 128;
-
-//INPUT TEXT//
-String typingNum = "";
-String typingDenom = "";
-String numerator = "";
-String denominator = "";
-boolean inNumerator = true;
-boolean inDenominator = false;
+color tonicsColor = color(255,255,255);
+color supertonicsColor = color(0,255,255);
+color mediantsColor = color(0,255,0);
+color subdominantsColor = color(255,0,0);
+color dominantsColor = color(0,0,255);
+color submediantsColor = color(255,0,255);
+color subtonicsColor = color(255,255,0);
 
 
-
-int itextX;
-int itextY;
-int itextWidth = 128;
-int itextHeight = 256;
-
-int numRectX;
-int numRectY;
-int numRectWidth = 128;
-int numRectHeight = 16;
-
-int denomRectX;
-int denomRectY;
-int denomRectWidth = 128;
-int denomRectHeight = 16;
-
-color inputBox;
-color inputHighlight;
 
 //SOUND//
 SinOsc tonicOsc;
@@ -100,26 +62,35 @@ SinOsc ratioOsc;
 float ratio;
 int tonicFreq;
 
-float vol;
-//PLAY BUTTON//
-int pbuttonX;
-int pbuttonY;
-int pbuttonWidth = 128;
-int pbuttonHeight = 128;
-color pbuttonColor;
-color pbuttonHighlight;
-boolean pbuttonOver = false;
-boolean isPlay = false;
-
-String pbuttonText = "";
-
-int ptextX;
-int ptextY;
-int ptextWidth = 128;
-int ptextHeight = 128;
+float tonicAmp;
+float ratioAmp;
 //
 //OTHER//
-int ITER = 100;
+int ITER = 20;
+
+//INTERFASCIA TEST//
+GUIController c;
+//IFTextField testText;
+
+IFButton playButton;
+boolean isPlay = false;
+
+IFRadioController colorModeSwitch;
+IFRadioButton mathModeRadioButton, musicModeRadioButton;
+
+//GUI Frame
+int radioRectX;
+int radioRectY;
+int radioRectWidth;
+int radioRectHeight;
+
+//CURSOR
+float cursorTailX;
+float cursorTailY;
+
+
+//COLOR MODE
+int colorMode;
 
 void setup(){
   size(1200,960);
@@ -131,183 +102,165 @@ void setup(){
   ratio = 0;
   
   //RADIUS LINE SETUP//
-  x3 = new float[3];
-  y3 = new float[3];
+  //math mode
+  halfs = new RadiusLine[2];
+  halfs[0] = new RadiusLine(halfsColor,0);
+  halfs[1] = new RadiusLine(halfsColor,PI);
   
-  for(int i = 0; i < 3; i++){
-    x3[i] = cos(radians(360*(i+1)/3.0))*fractionRadius + width/2;
-    y3[i] = sin(radians(360*(i+1)/3.0))*fractionRadius+height/2;
-  }
+  thirds = new RadiusLine[2];
+  thirds[0] = new RadiusLine(thirdsColor,TWO_PI/3);
+  thirds[1] = new RadiusLine(thirdsColor,2*TWO_PI/3);
   
-  x4 = new float[4];
-  y4 = new float[4];
+  quarters = new RadiusLine[2];
+  quarters[0] = new RadiusLine(quartersColor,HALF_PI);
+  quarters[1]= new RadiusLine(quartersColor,3*HALF_PI);
   
+  fifths = new RadiusLine[4];
   for(int i = 0; i < 4; i++){
-    x4[i] = cos(radians(360*(i+1)/4.0))*fractionRadius + width/2;
-    y4[i] = sin(radians(360*(i+1)/4.0))*fractionRadius+height/2;
+    fifths[i] = new RadiusLine(fifthsColor,(i+1)*(TWO_PI/5));
   }
   
-  x5 = new float[5];
-  y5 = new float[5];
+  sixths = new RadiusLine[2];
+  sixths[0] = new RadiusLine(sixthsColor,PI/3);
+  sixths[1] = new RadiusLine(sixthsColor,5*PI/3);
   
-  for(int i = 0; i < 5; i++){
-    x5[i] = cos(radians(360*(i+1)/5.0))*fractionRadius + width/2;
-    y5[i] = sin(radians(360*(i+1)/5.0))*fractionRadius+height/2;
-  }
-  
-  x6 = new float[6];
-  y6 = new float[6];
-  
+  sevenths = new RadiusLine[6];
   for(int i = 0; i < 6; i++){
-    x6[i] = cos(radians(360*(i+1)/6.0))*fractionRadius + width/2;
-    y6[i] = sin(radians(360*(i+1)/6.0))*fractionRadius+height/2;
+    sevenths[i] = new RadiusLine(seventhsColor,(i+1)*(TWO_PI/7));
   }
-  //BUTTON SETUP//
-  //text mode button
-  buttonColor = color(128);
-  buttonHighlight = color(196);
   
-  buttonX = 10;
-  buttonY = 10;
+  eighths = new RadiusLine[4];
+  for(int i = 0; i < 4; i++){
+    eighths[i] = new RadiusLine(eighthsColor,(i*HALF_PI)+QUARTER_PI);
+  }
   
-  //play button
-  pbuttonColor = color(128);
-  pbuttonHighlight = color(128);
+  //music mode
+  tonics = new RadiusLine[4];
+  for(int i = 0; i < 4; i++){
+    tonics[i] = new RadiusLine(tonicsColor,TWO_PI/(pow(2,i)));
+  }
   
-  pbuttonX = 10;
-  pbuttonY = 2*buttonY + buttonHeight;
+  supertonics = new RadiusLine[2];
+  supertonics[0] = new RadiusLine(supertonicsColor,9*PI/8);
+  supertonics[1] = new RadiusLine(supertonicsColor,9*PI/16);
   
-  //TEXT SETUP//
-  f = createFont("Arial",16);
-  //text mode button
-  textX = 10;
-  textY = 10;
-  buttonText = "Text input mode is ";
-  buttonState = "FALSE";
+  mediants = new RadiusLine[2];
+  mediants[0] = new RadiusLine(mediantsColor,5*PI/4);
+  mediants[1] = new RadiusLine(mediantsColor,5*PI/8);
   
-  //play button
-  ptextX = 10;
-  ptextY = 2*textY+textHeight;
-  pbuttonText = "PLAY";
+  subdominants = new RadiusLine[3];
+  for(int i = 0; i < 3; i++){
+    subdominants[i] = new RadiusLine(subdominantsColor, (4*PI)/(3*pow(2,i))); 
+  }
   
-  //TEXT INPUT SETUP
-  itextX = (7*width)/8 - 64;
-  itextY = height/4;
+  dominants = new RadiusLine[3];
+  for(int i = 0; i < 3; i++){
+    dominants[i] = new RadiusLine(dominantsColor, (3*PI)/(pow(2,i+1))); 
+  }
   
-  numRectX = itextX;
-  numRectY = itextY - 24;
-  denomRectX = itextX;
-  denomRectY = itextY;
+  submediants = new RadiusLine[3];
+  for(int i = 0; i < 3; i++){
+    submediants[i] = new RadiusLine(submediantsColor, (5*PI)/(3*pow(2,i))); 
+  }
   
-  inputBox = color(128);
-  inputHighlight = color(196);
+  subtonics = new RadiusLine[2];
+  subtonics[0] = new RadiusLine(subtonicsColor,15*PI/8);
+  subtonics[1] = new RadiusLine(subtonicsColor,15*PI/16);
+  
   
   //SOUND//
-  tonicFreq = 110;
-  vol = 0.1;
+  tonicFreq = 220;
+  tonicAmp = .1;
   tonicOsc = new SinOsc(this);
   tonicOsc.freq(tonicFreq);
-  tonicOsc.amp(vol);
+  tonicOsc.amp(tonicAmp);
   
+  ratioAmp = .1;
   ratioOsc = new SinOsc(this);
-  ratioOsc.amp(vol);
+  ratioOsc.amp(ratioAmp);
+  
+  //GUI TEST/
+  c = new GUIController(this);
+  //testText = new IFTextField("Input",10,height/2+height/4);
+  //estText.addActionListener(this);
+  
+  playButton = new IFButton("PLAY",10,10,100);
+  playButton.addActionListener(this);
+  
+  colorModeSwitch = new IFRadioController("Color Mode");
+  colorModeSwitch.addActionListener(this);
+  mathModeRadioButton = new IFRadioButton("Math", 12, 40, colorModeSwitch);
+  musicModeRadioButton = new IFRadioButton("Music", 12, 60, colorModeSwitch);
+  
+  //c.add(testText);
+  c.add(playButton);
+  c.add(colorModeSwitch);
+  c.add(mathModeRadioButton);
+  c.add(musicModeRadioButton);
+  
+  //radio rectangle
+  radioRectX = 10;
+  radioRectY = 40;
+  radioRectWidth = 80;
+  radioRectHeight = 40;
+  
+  
+  //COLOR MODE
+  colorMode = 0; //Math Mode
 }
 
 void draw(){
-  update(mouseX,mouseY);
+
   background(0);
   fill(0);
   
-  stroke(color(0,255,0));
-  for(int i = 0; i < 3; i++){
-    line(originX,originY,x3[i],y3[i]);
+  if(colorMode == 0){
+    drawRadiusLines(halfs);
+    drawRadiusLines(thirds);
+    drawRadiusLines(quarters);
+    drawRadiusLines(fifths);
+    drawRadiusLines(sixths);
+    drawRadiusLines(sevenths);
+    drawRadiusLines(eighths);
+  }else if(colorMode == 1){
+    drawRadiusLines(tonics);
+    drawRadiusLines(supertonics);
+    drawRadiusLines(mediants);
+    drawRadiusLines(subdominants);
+    drawRadiusLines(dominants);
+    drawRadiusLines(submediants);
+    drawRadiusLines(subtonics);
   }
   
-  stroke(color(0,0,255));
-    for(int i = 0; i < 4; i++){
-    line(originX,originY,x4[i],y4[i]);
-  }
-  
-  stroke(color(255,0,0));
-    for(int i = 0; i < 5; i++){
-    line(originX,originY,x5[i],y5[i]);
-  }
-  
-  stroke(color(0,255,255));
-    for(int i = 0; i < 6; i++){
-    line(originX,originY,x6[i],y6[i]);
-  }
-  ellipse(originX,originY,diameter,diameter);
+  //ellipse(originX,originY,diameter,diameter);
   stroke(circleColor);
-  
-  if(buttonOver){
-    fill(buttonHighlight);
-  }else{
-    fill(buttonColor);
-  }
-  
-  rect(buttonX,buttonY,buttonWidth,buttonHeight);
-  
-  if(pbuttonOver){
-    fill(pbuttonHighlight);
-  }else{
-    fill(pbuttonColor);
-  }
-  
-  rect(pbuttonX,pbuttonY,pbuttonWidth,pbuttonHeight);
-  
-  if(inNumerator){
-    fill(inputHighlight);
-    rect(numRectX,numRectY,numRectWidth,numRectHeight);
-    fill(inputBox);
-    rect(denomRectX,denomRectY,denomRectWidth,denomRectHeight);
-  }else if(inDenominator){
-    fill(inputHighlight);
-    rect(denomRectX,denomRectY,denomRectWidth,denomRectHeight);
-    fill(inputBox);
-    rect(numRectX,numRectY,numRectWidth,numRectHeight);
-  }
-  
-  textFont(f);
-  
+ 
   fill(255);
-  //text("Input " + typing, itextX, itextY-32); 
-  text("Numerator: " + typingNum +"pi",itextX,itextY-24,itextWidth,itextHeight);
-  text("Denominator: " + typingDenom,itextX,itextY,itextWidth,itextHeight);
-  
-  text(buttonText+buttonState,textX,textY,textWidth,textHeight);
-  text(pbuttonText,ptextX,ptextY,ptextWidth,ptextHeight);
 
   stroke(lineColor);
   fill(0);
   
-  if(textMode){
-    ratio = angleNum/angleDenom;
-    if(ratio < 0){
-      ratio = -ratio;
-    }
-    angle = ratio*PI;
-    
-    arc(originX,originY,2*radius,2*radius,0,angle,CHORD);
-    noFill();
-    
-    stroke(lineColor);
-    drawChords(angle);
-  }else{
-    angle = atan2(mouseY - height/2, mouseX - width/2);
-    if(angle < 0){
-      angle += 2*PI;
-    }
-    ratio = angle / PI;
-    
-    arc(originX,originY,2*radius,2*radius,0,angle,CHORD);
-    noFill();
-    
-    stroke(lineColor);
-    drawChords(angle);
+  angle = atan2(mouseY - height/2, mouseX - width/2);
+  if(angle < 0){
+    angle += 2*PI;
   }
+  ratio = angle / PI;
+  noFill();
+  arc(originX,originY,2*radius,2*radius,0,angle,CHORD);
+  noFill();
   
-
+  stroke(lineColor);
+  drawChords(angle);
+  
+  //Radio Rect
+  fill(200);
+  rect(radioRectX,radioRectY,radioRectWidth,radioRectHeight);
+  //CURSOR
+  stroke(255);                                                  //sqrt(pow(mouseX-originX,2)+pow(mouseY-originY,2))-20
+  cursorTailX = cos(atan2(mouseY - height/2, mouseX - width/2))*(radius) + originX;
+  cursorTailY = sin(atan2(mouseY - height/2, mouseX - width/2))*(radius) + originY;
+  line(cursorTailX,cursorTailY,mouseX,mouseY);
+  //line(mouseX, mouseY, cursorTailX,cursorTailY);
 
   ratioOsc.freq(tonicFreq*ratio);
   
@@ -320,112 +273,79 @@ void draw(){
   }
 }
 
-void update(int x, int y) {
-  if ( overCircle(originX, originY, diameter) ) {
-    circleOver = true;
-    buttonOver = false;
-    pbuttonOver = false;
-  } else if ( overRect(buttonX, buttonY, buttonWidth, buttonHeight) ) {
-    buttonOver = true;
-    circleOver = false;
-    pbuttonOver = false;
-  } else if(overRect(pbuttonX,pbuttonY,pbuttonWidth,pbuttonHeight)) {
-    pbuttonOver = true;
-    circleOver = false;
-    buttonOver = false;
-  } else {
-    circleOver = buttonOver = pbuttonOver = false;
-  }
-}
-
-
-void mousePressed() {
-  if(buttonOver && textMode){
-    textMode = false;
-    buttonState = "FALSE";
-  }else if(buttonOver && !textMode){
-    textMode = true;
-    buttonState = "TRUE";
-  }else if(pbuttonOver && isPlay){
-    isPlay = false;
-    pbuttonText = "PLAY";
-  }else if(pbuttonOver && !isPlay){
-    isPlay = true;
-    pbuttonText = "PAUSE";
+void actionPerformed(GUIEvent e){
+  /*
+  if(e.getSource() == testText){
+    //println("message: " + e.getMessage());
+    if(e.getMessage() == "Completed"){
+    }
+  }else */
+  if(e.getSource() == playButton){
+    //println("message: " + e.getMessage());
+    if(e.getMessage() == "Clicked"){
+      if(isPlay){
+        isPlay = false;
+        playButton.setLabel("PLAY");
+      }else{
+        isPlay = true;
+        playButton.setLabel("PAUSE");
+      }
+    }
+  }else if(e.getSource() == mathModeRadioButton){
+    if(e.getMessage() == "Selected"){
+      colorMode = 0;
+    }
+  }else if(e.getSource() == musicModeRadioButton){
+    if(e.getMessage() == "Selected"){
+      colorMode = 1;
+    }
   }
 }
 
 void keyPressed(){
-
-  if(textMode){
-    if(key == CODED){
-      //Arrow keys change input field
-      if(keyCode == UP || keyCode == DOWN){
-        if(inNumerator){ inNumerator = false; inDenominator = true; }
-        else if(inDenominator){ inNumerator = true; inDenominator = false; }
-        else{ inNumerator = true; inDenominator = false; }
-      }
-    }else if(key == BACKSPACE){
-      if(inNumerator){
-        if(typingNum.length() != 0){
-          typingNum = typingNum.substring(0,typingNum.length()-1);
-        }
-      }else if(inDenominator){
-        if(typingDenom.length() != 0){
-          typingDenom = typingDenom.substring(0,typingDenom.length()-1);
-        }
-      }
-    }else if(key == '\n'){
-      numerator = typingNum;
-      denominator = typingDenom;
-      
-      //if input text is empty
-      if(typingNum.length() == 0){
-        angleNum = 0;
-      }else{
-        angleNum = Integer.valueOf(numerator);
-      }
-      if(typingDenom.length() == 0){
-        angleDenom = 1;
-      }else{
-        angleDenom = Integer.valueOf(denominator);
-      }
-    }else{
-      if(inNumerator){
-        typingNum = typingNum + key;
-      }else if(inDenominator){
-        typingDenom = typingDenom + key;
-      }
-    }
-  }
+ if(key == ' '){
+   if(isPlay){
+      isPlay = false;
+      playButton.setLabel("PLAY");
+   }else{
+      isPlay = true;
+      playButton.setLabel("PAUSE");
+   }
+ }
 }
-  
 
 void drawChords(float angle){
   float resolution = 255/ITER;
   arcColor = color(255,0,0);
   for(int i = 2; i < ITER; i++){
-    stroke(arcColor);
+    //stroke(arcColor);
     arc(originX,originY,2*radius,2*radius,(i-1)*angle,i*angle,CHORD);
-    arcColor = color(255-i*resolution,0,0);
+    //arcColor = color(255-i*resolution,0,0);
   }
 }
 
-boolean overRect(int x, int y, int width, int height)  {
-  if (mouseX >= x && mouseX <= x+width && 
-      mouseY >= y && mouseY <= y+height) {
-    return true;
-  } else {
-    return false;
+void drawRadiusLines(RadiusLine[] lines){
+  for(int i = 0; i < lines.length; i++){
+    lines[i].drawLine();
   }
 }
 
-boolean overCircle(int x, int y, int diameter) {
-  float disX = x - mouseX;
-  float disY = y - mouseY;
-  if (sqrt(sq(disX) + sq(disY)) < diameter/2 ) {
-    return true;
-  } else {
-    return false;
+class RadiusLine {
+  color c;
+  float x;
+  float y;
+  
+  RadiusLine(color _c, float angle){
+    c = _c;
+    x = cos(angle)*fractionRadius + width/2;
+    y = sin(angle)*fractionRadius + height/2;
+  }
+  
+  void setColor(color _c){
+    c = _c;
+  }
+  void drawLine(){
+    stroke(c);
+    line(originX,originY,x,y);
   }
 }
