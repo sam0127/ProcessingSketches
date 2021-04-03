@@ -111,6 +111,27 @@ MidiBus midiBus;
 
 Map<Integer,SinOsc> concurrentNotes;
 
+//FREQUENCY LOGIC
+boolean justIntonation;
+float fundamentalFreq;
+int fundamentalPitch;
+int interval;
+//float latestIntervalPlayed;
+
+ArrayList<Float> intervalRatios;
+float prime = 1.0;
+float minSecond = 16.0/15.0;
+float majSecond = 9.0/8.0;
+float minThird = 6.0/5.0;
+float majThird = 5.0/4.0;
+float fourth = 4.0/3.0;
+float tritone = 7.0/5.0;
+float fifth = 3.0/2.0;
+float minSixth = 8.0/5.0;
+float majSixth = 5.0/3.0;
+float minSeventh = 7.0/4.0;
+float majSeventh = 15.0/8.0;
+
 void setup(){
   size(1200,960);
   originX = width/2;
@@ -248,6 +269,27 @@ void setup(){
   midiBus = new MidiBus(this,0,1);
   
   concurrentNotes = new HashMap<Integer,SinOsc>();
+  
+  //Frequency
+  
+  justIntonation = true;
+  //latestIntervalPlayed = 1.0;
+  
+
+  intervalRatios = new ArrayList<Float>();
+  intervalRatios.add(prime);
+  intervalRatios.add(minSecond);
+  intervalRatios.add(majSecond);
+  intervalRatios.add(minThird);
+  intervalRatios.add(majThird);
+  intervalRatios.add(fourth);
+  intervalRatios.add(tritone);
+  intervalRatios.add(fifth);
+  intervalRatios.add(minSixth);
+  intervalRatios.add(majSixth);
+  intervalRatios.add(minSeventh);
+  intervalRatios.add(majSeventh);
+  
 }
 
 void draw(){
@@ -282,7 +324,13 @@ void draw(){
   fill(0);
   
   if(midiMode){
+    //ratio = latestIntervalPlayed;
+    angle = ratio*PI;
     
+    noFill();
+    arc(originX,originY,2*radius,2*radius,0,angle,CHORD);
+
+    drawChords(angle);
   }else{
     angle = atan2(mouseY - height/2, mouseX - width/2);
     if(angle < 0){
@@ -291,9 +339,9 @@ void draw(){
     ratio = angle / PI;
     noFill();
     arc(originX,originY,2*radius,2*radius,0,angle,CHORD);
-    noFill();
+    //noFill();
     
-    stroke(lineColor);
+    //stroke(lineColor);
     drawChords(angle);
     
     ratioOsc.freq(tonicFreq*ratio);
@@ -322,13 +370,7 @@ void draw(){
   
 }
 
-void actionPerformed(GUIEvent e){
-  /*
-  if(e.getSource() == testText){
-    //println("message: " + e.getMessage());
-    if(e.getMessage() == "Completed"){
-    }
-  }else */
+void actionPerformed(GUIEvent e){ 
   if(e.getSource() == playButton){
     //println("message: " + e.getMessage());
     if(e.getMessage() == "Clicked"){
@@ -374,8 +416,16 @@ void keyPressed(){
 void noteOn(int channel, int pitch, int velocity, long timestamp, String bus_name){
   println(channel, pitch, velocity, timestamp);
   SinOsc s = new SinOsc(this);
-  s.play(midiToFreq(pitch),velToAmp(velocity));
+  //println(fundamental);
+  if(justIntonation && concurrentNotes.size() == 0){
+    fundamentalFreq = midiToFreq(pitch,false);
+    fundamentalPitch = pitch;
+  }
+  s.play(midiToFreq(pitch,justIntonation),velToAmp(velocity));
   concurrentNotes.put(new Integer(pitch),s);
+  
+  
+  //println(fundamental);
 }
 
 void noteOff(int channel, int pitch, int velocity, long timestamp, String bus_name){
@@ -383,8 +433,26 @@ void noteOff(int channel, int pitch, int velocity, long timestamp, String bus_na
   concurrentNotes.remove(new Integer(pitch)).stop();
 }
 
-float midiToFreq(int note){
-  return (pow(2, ((note-69)/12.0))) * 440;
+int mod;
+int oct;
+float midiToFreq(int note, boolean mode){
+  if(mode){
+    interval = note - fundamentalPitch;
+    
+    if(interval < 0){
+      oct = (interval / 12) - 1;
+      interval = abs(interval % 12);
+    }else{
+      oct = interval / 12;
+      interval %= 12;
+    }
+    
+    //latestIntervalPlayed = intervalRatios.get(interval)*pow(2,oct);
+    return fundamentalFreq * intervalRatios.get(interval)*pow(2,oct);
+  }else{
+    return (pow(2, ((note-69)/12.0))) * 440;
+  }
+  
 }
 
 float velToAmp(int vel){
