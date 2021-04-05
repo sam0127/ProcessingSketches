@@ -110,6 +110,8 @@ boolean midiMode;
 MidiBus midiBus;
 
 Map<Integer,SinOsc> concurrentNotes;
+Map<Integer,Float> concurrentIntervals;
+Iterator concurrentIntervalIterator;
 
 //FREQUENCY LOGIC
 boolean justIntonation;
@@ -131,6 +133,7 @@ float minSixth = 8.0/5.0;
 float majSixth = 5.0/3.0;
 float minSeventh = 7.0/4.0;
 float majSeventh = 15.0/8.0;
+float octave = 2.0;
 
 void setup(){
   size(1200,960);
@@ -269,6 +272,7 @@ void setup(){
   midiBus = new MidiBus(this,0,1);
   
   concurrentNotes = new HashMap<Integer,SinOsc>();
+  concurrentIntervals = new HashMap<Integer,Float>();
   
   //Frequency
   
@@ -289,7 +293,7 @@ void setup(){
   intervalRatios.add(majSixth);
   intervalRatios.add(minSeventh);
   intervalRatios.add(majSeventh);
-  
+  intervalRatios.add(octave);
 }
 
 void draw(){
@@ -325,12 +329,17 @@ void draw(){
   
   if(midiMode){
     //ratio = latestIntervalPlayed;
-    angle = ratio*PI;
-    
     noFill();
-    arc(originX,originY,2*radius,2*radius,0,angle,CHORD);
-
-    drawChords(angle);
+    concurrentIntervalIterator = concurrentIntervals.entrySet().iterator();
+    while(concurrentIntervalIterator.hasNext()){
+      ratio = (float)((Map.Entry)concurrentIntervalIterator.next()).getValue();
+      angle = ratio*PI;
+    
+      arc(originX,originY,2*radius,2*radius,0,angle,CHORD);
+  
+      drawChords(angle);
+    }
+ 
   }else{
     angle = atan2(mouseY - height/2, mouseX - width/2);
     if(angle < 0){
@@ -413,16 +422,19 @@ void keyPressed(){
  }
 }
 
+float intervalRatio;
 void noteOn(int channel, int pitch, int velocity, long timestamp, String bus_name){
   println(channel, pitch, velocity, timestamp);
   SinOsc s = new SinOsc(this);
   //println(fundamental);
   if(justIntonation && concurrentNotes.size() == 0){
-    fundamentalFreq = midiToFreq(pitch,false);
+    fundamentalFreq = midiToFreq(pitch);
     fundamentalPitch = pitch;
   }
-  s.play(midiToFreq(pitch,justIntonation),velToAmp(velocity));
+  intervalRatio = getFundamentalRatio(pitch);
+  s.play(fundamentalFreq*intervalRatio,velToAmp(velocity));
   concurrentNotes.put(new Integer(pitch),s);
+  concurrentIntervals.put(new Integer(pitch),intervalRatio);
   
   
   //println(fundamental);
@@ -431,28 +443,50 @@ void noteOn(int channel, int pitch, int velocity, long timestamp, String bus_nam
 void noteOff(int channel, int pitch, int velocity, long timestamp, String bus_name){
   println(channel, pitch, velocity, timestamp);
   concurrentNotes.remove(new Integer(pitch)).stop();
+  concurrentIntervals.remove(new Integer(pitch));
 }
 
 int mod;
 int oct;
-float midiToFreq(int note, boolean mode){
+float midiToFreq(int note){
+  /*
   if(mode){
     interval = note - fundamentalPitch;
     
     if(interval < 0){
       oct = (interval / 12) - 1;
-      interval = abs(interval % 12);
+      interval = interval % 12;
+      interval = 12 + interval;
     }else{
       oct = interval / 12;
       interval %= 12;
     }
     
     //latestIntervalPlayed = intervalRatios.get(interval)*pow(2,oct);
-    return fundamentalFreq * intervalRatios.get(interval)*pow(2,oct);
+    ratio = intervalRatios.get(interval)*pow(2,oct);
+    concurrentIntervals.put(new Integer(note),ratio);
+    return fundamentalFreq * ratio;
   }else{
     return (pow(2, ((note-69)/12.0))) * 440;
-  }
+  }*/
   
+  return (pow(2, ((note-69)/12.0))) * 440;
+}
+
+float getFundamentalRatio(int note){
+  interval = note - fundamentalPitch;
+    
+    if(interval < 0){
+      oct = (interval / 12) - 1;
+      interval = interval % 12;
+      interval = 12 + interval;
+    }else{
+      oct = interval / 12;
+      interval %= 12;
+    }
+    
+    //latestIntervalPlayed = intervalRatios.get(interval)*pow(2,oct);
+    return intervalRatios.get(interval)*pow(2,oct);
 }
 
 float velToAmp(int vel){
