@@ -240,10 +240,13 @@ void draw(){
   //input rect
   rect(inputRectX,inputRectY,inputRectWidth,inputRectHeight);
   //CURSOR
-  stroke(255);                                                  //sqrt(pow(mouseX-originX,2)+pow(mouseY-originY,2))-20
-  cursorTailX = cos(atan2(mouseY - height/2, mouseX - width/2))*(radius) + originX;
-  cursorTailY = sin(atan2(mouseY - height/2, mouseX - width/2))*(radius) + originY;
-  line(cursorTailX,cursorTailY,mouseX,mouseY);
+  stroke(255);                                                  
+  if(!midiMode){
+    cursorTailX = cos(atan2(mouseY - height/2, mouseX - width/2))*(radius) + originX;
+    cursorTailY = sin(atan2(mouseY - height/2, mouseX - width/2))*(radius) + originY;
+    line(cursorTailX,cursorTailY,mouseX,mouseY);
+  }
+  
   //line(mouseX, mouseY, cursorTailX,cursorTailY);
 
   
@@ -297,8 +300,8 @@ void keyPressed(){
 }
 
 float intervalRatio;
-void noteOn(int channel, int pitch, int velocity, long timestamp, String bus_name){
-  println(channel, pitch, velocity, timestamp);
+void noteOn(int channel, int pitch, int velocity){
+  println(channel, pitch, velocity);
   SinOsc s = new SinOsc(this);
   //println(fundamental);
   if(justIntonation && concurrentNotes.size() == 0){
@@ -312,13 +315,13 @@ void noteOn(int channel, int pitch, int velocity, long timestamp, String bus_nam
   //println(fundamental);
 }
 
-void noteOff(int channel, int pitch, int velocity, long timestamp, String bus_name){
-  println(channel, pitch, velocity, timestamp);
+void noteOff(int channel, int pitch, int velocity){
+  println(channel, pitch, velocity);
   concurrentNotes.remove(new Integer(pitch)).stop();
   concurrentIntervals.remove(new Integer(pitch));
 }
 
-int mod;
+
 int oct;
 float midiToFreq(int note){
   return (pow(2, ((note-69)/12.0))) * 440;
@@ -344,7 +347,7 @@ float velToAmp(int vel){
 }
 
 void drawChords(float angle){
-  float resolution = 255/ITER;
+  //float resolution = 255/ITER;
   arcColor = color(255,0,0);
   for(int i = 2; i < ITER; i++){
     //stroke(arcColor);
